@@ -1,46 +1,136 @@
 import numpy as np
-from funciones import evaluar_funcion, inicializar_particula
+import math
+import matplotlib.pyplot as plt
 
-def ejecutar_pso(funcion_config, param_config, num_particulas=30, max_iter=100):
-    dim = funcion_config["dim"]
-    bounds = funcion_config["bounds"]
-    w = param_config["w"]
-    c1 = param_config["c1"]
-    c2 = param_config["c2"]
+class Particle:
+    def __init__(self, dim, bounds):
+        self.position = np.random.uniform(bounds[0], bounds[1], dim)
+        self.velocity = np.zeros(dim)
+        self.best_position = self.position.copy()
+        self.best_score = float('inf')
 
-    # Inicialización
-    posiciones = np.array([inicializar_particula(bounds, dim) for _ in range(num_particulas)])
-    velocidades = np.random.uniform(-1, 1, (num_particulas, dim))
-    pbest = posiciones.copy()
-    pbest_val = np.array([evaluar_funcion(funcion_config, x) for x in posiciones])
-    gbest_idx = np.argmin(pbest_val)
-    gbest = pbest[gbest_idx].copy()
-    gbest_val = pbest_val[gbest_idx]
-    historial = [gbest_val]
+class PSO:
+    def __init__(self, objective_func, bounds, dim, n_particles=30, max_iter=100, w=0.7, c1=1.5, c2=1.5):
+        self.objective_func = objective_func
+        self.bounds = bounds
+        self.dim = dim
+        self.n_particles = n_particles
+        self.max_iter = max_iter
+        self.w = w  # inertia weight
+        self.c1 = c1  # cognitive parameter
+        self.c2 = c2  # social parameter
+        self.particles = [Particle(self.dim, bounds) for _ in range(n_particles)]
+        self.global_best_position = None
+        self.global_best_score = float('inf')
 
-    for iter in range(max_iter):
-        for i in range(num_particulas):
-            valor = evaluar_funcion(funcion_config, posiciones[i])
-            if valor < pbest_val[i]:
-                pbest[i] = posiciones[i].copy()
-                pbest_val[i] = valor
-            if valor < gbest_val:
-                gbest = posiciones[i].copy()
-                gbest_val = valor
+    def optimize(self):
+        for _ in range(self.max_iter):
+            for particle in self.particles:
+                # Evaluate current position
+                score = self.objective_func(particle.position)
+                
+                # Update personal best
+                if score < particle.best_score:
+                    particle.best_position = particle.position.copy()
+                    particle.best_score = score
+                    
+                    # Update global best
+                    if score < self.global_best_score:
+                        self.global_best_position = particle.position.copy()
+                        self.global_best_score = score
 
-        # Actualizar velocidades y posiciones
-        r1 = np.random.rand(num_particulas, dim)
-        r2 = np.random.rand(num_particulas, dim)
-        velocidades = (
-            w * velocidades
-            + c1 * r1 * (pbest - posiciones)
-            + c2 * r2 * (gbest - posiciones)
-        )
-        posiciones += velocidades
+                # Update velocity and position
+                r1, r2 = np.random.rand(2)
+                particle.velocity = (self.w * particle.velocity + 
+                                  self.c1 * r1 * (particle.best_position - particle.position) +
+                                  self.c2 * r2 * (self.global_best_position - particle.position))
+                
+                particle.position += particle.velocity
+                
+                # Keep particles within bounds
+                particle.position = np.clip(particle.position, self.bounds[0], self.bounds[1])
 
-        # Aplicar límites
-        posiciones = np.clip(posiciones, bounds[0], bounds[1])
+        return self.global_best_position, self.global_best_score
 
-        historial.append(gbest_val)
+# Test functions
+def f1(x):
+    return 4 - 4 * x[0]**3 - 4 * x[0] + x[1]**2
 
-    return gbest, gbest_val, historial
+def f2(x):
+    return (1/899) * (sum(x[i]**2 * 2**(i+1) for i in range(6)) - 1745)
+
+def f3(x):
+    return (x[0]**6 + x[1]**4 + 12)**2 + (2*x[0] + x[1] - 4)**2
+
+def f4(x):
+    # Check if any value is outside the valid domain for logarithm
+    if any(xi <= 2 or xi >= 10 for xi in x):
+        return float('inf')  # Return infinity for invalid values
+    
+    try:
+        sum_term = sum((math.log(x[i]-2))**2 + (math.log(10-x[i]))**2 for i in range(10))
+        prod_term = (np.prod(x))**0.2
+        return sum_term - prod_term
+    except (ValueError, ZeroDivisionError):
+        return float('inf')  # Return infinity for any mathematical errors
+
+# Function to run multiple iterations
+def run_multiple_iterations(func, bounds, dim, config, n_iterations=10):
+    results = []
+    for i in range(n_iterations):
+        pso = PSO(func, bounds, dim, n_particles=30, max_iter=100, 
+                 w=config['w'], c1=config['c1'], c2=config['c2'])
+        best_pos, best_score = pso.optimize()
+        results.append((best_pos, best_score))
+        print(f"Config {config['name']} - Iteration {i+1}: Best position = {best_pos}, Best score = {best_score}")
+    return results
+
+def plot_results(results_dict, function_name):
+    plt.figure(figsize=(12, 6))
+    
+    for config_name, results in results_dict.items():
+        scores = [score for _, score in results]
+        plt.plot(range(1, 11), scores, 'o-', label=config_name)
+    
+    plt.title(f'PSO Results for {function_name} with Different Configurations')
+    plt.xlabel('Iteration')
+    plt.ylabel('Best Score')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+if __name__ == "__main__":
+    # Define PSO configurations
+    configurations = [
+        {'name': 'Standard', 'w': 0.7, 'c1': 1.5, 'c2': 1.5},
+        {'name': 'High Exploration', 'w': 0.9, 'c1': 2.0, 'c2': 1.0},
+        {'name': 'High Exploitation', 'w': 0.4, 'c1': 1.0, 'c2': 2.0},
+        {'name': 'Balanced', 'w': 0.6, 'c1': 1.7, 'c2': 1.7},
+        {'name': 'Conservative', 'w': 0.5, 'c1': 1.0, 'c2': 1.0}
+    ]
+
+    # Define bounds for each function
+    bounds_f1 = (-5, 5)
+    bounds_f2 = (0, 1)
+    bounds_f3 = (-500, 500)
+    bounds_f4 = (2.001, 10)
+
+    # Test each function with all configurations
+    functions = [
+        ('f1', f1, bounds_f1, 2),
+        ('f2', f2, bounds_f2, 6),
+        ('f3', f3, bounds_f3, 2),
+        ('f4', f4, bounds_f4, 10)
+    ]
+
+    for func_name, func, bounds, dim in functions:
+        print(f"\nTesting {func_name} with different configurations:")
+        results_dict = {}
+        
+        for config in configurations:
+            print(f"\nConfiguration: {config['name']}")
+            results = run_multiple_iterations(func, bounds, dim, config)
+            results_dict[config['name']] = results
+        
+        # Plot results for this function
+        plot_results(results_dict, func_name) 
