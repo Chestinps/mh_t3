@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 
@@ -75,10 +74,10 @@ class PSO:
         return self.global_best, self.global_best_score
 
 funciones = [
-    ("f1_real", f1_real, [(-5, 5), (-5, 5)]),
-    ("f2_real", f2_real, [(0, 1)] * 6),
-    ("f3_real", f3_real, [(-500, 500), (-500, 500)]),
-    ("f4_real", f4_real, [(2.001, 10)] * 10)
+    ("f1", f1_real, [(-5, 5), (-5, 5)]),
+    ("f2", f2_real, [(0, 1)] * 6),
+    ("f3", f3_real, [(-500, 500), (-500, 500)]),
+    ("f4", f4_real, [(2.001, 10)] * 10)
 ]
 
 configs = [
