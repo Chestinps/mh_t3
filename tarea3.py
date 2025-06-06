@@ -8,7 +8,7 @@ def f1_real(x):
 
 # Función 2: f2(x) = (1/899) * (sum(xi^2 * 2^i) - 1745)
 def f2_real(x):
-    total = sum(x[i]**2 * 2**(i + 1) for i in range(6))
+    total = sum(x[i]**2 * 2**(i) for i in range(6))
     return (1 / 899) * (total - 1745)
 
 # Función 3: f3(x) = (x1^6 + x2^4 - 17)^2 + (2x1 + x2 - 4)^2
