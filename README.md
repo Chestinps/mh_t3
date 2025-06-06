@@ -3,8 +3,8 @@
 
 Este repositorio contiene **dos implementaciones funcionales del algoritmo PSO**, desarrolladas de forma paralela por los integrantes del equipo:
 
-- `PSO.py` fue desarrollado por **José Agustín Pérez**
-- `tarea3.py` fue desarrollado por **Cristóbal Martínez**
+- `PSO.py` fue desarrollado por **José Agustín Pérez** (100 partículas y 1000 iteraciones).
+- `tarea3.py` fue desarrollado por **Cristóbal Martínez** (15 partículas y 50 iteraciones).
 
 Ambos archivos ejecutan correctamente la metaheurística y obtienen resultados coherentes. La decisión de mantener ambos scripts de forma independiente fue tomada con el objetivo de **verificar que se llega a los mismos resultados mediante implementaciones distintas**, fortaleciendo así la validez de la solución y fomentando la comparación de estilos de codificación.
 
